@@ -718,7 +718,10 @@ const AiResponsePanel: React.FC<AiResponsePanelProps> = ({
                   title={t(
                     'rewordedInTheAnswerTitle',
                     'The answer cites this finding at {{markers}} and reworded it: it reproduces the record and then says something different inside the same sentence. Open the detail to compare it with the record’s own words.',
-                    { markers: (rewordedWarnings.get(warning) ?? []).map((index) => `[${index}]`).join(', ') },
+                    {
+                      markers: (rewordedWarnings.get(warning) ?? []).map((index) => `[${index}]`).join(', '),
+                      interpolation: { escapeValue: false },
+                    },
                   )}
                 >
                   {t('rewordedInTheAnswer', 'Reworded in the answer, compare')}
@@ -760,6 +763,7 @@ const AiResponsePanel: React.FC<AiResponsePanelProps> = ({
                 >
                   {t('seeMarkerInTheAnswer', 'See {{markers}} in the answer', {
                     markers: (compactWarnings.get(warning) ?? []).map((index) => `[${index}]`).join(', '),
+                    interpolation: { escapeValue: false },
                   })}
                 </span>
               )}{' '}
@@ -801,7 +805,10 @@ const AiResponsePanel: React.FC<AiResponsePanelProps> = ({
                   )}
                 >
                   {orders.length > 0
-                    ? t('alreadyPrescribedOrders', 'Already prescribed: {{orders}}', { orders: orders.join(', ') })
+                    ? t('alreadyPrescribedOrders', 'Already prescribed: {{orders}}', {
+                        orders: orders.join(', '),
+                        interpolation: { escapeValue: false },
+                      })
                     : t('alreadyPrescribed', 'Already prescribed')}
                 </span>
               </>
@@ -821,6 +828,7 @@ const AiResponsePanel: React.FC<AiResponsePanelProps> = ({
                 {endedOn
                   ? t('aboutAnEndedOrderOn', 'About an order no longer in force, ended {{stopDate}}', {
                       stopDate: endedOn,
+                      interpolation: { escapeValue: false },
                     })
                   : t('aboutAnEndedOrder', 'About an order no longer in force')}
               </span>
@@ -870,6 +878,7 @@ const AiResponsePanel: React.FC<AiResponsePanelProps> = ({
                     count: drugs.length,
                     defaultValue_other:
                       'No record says the {{drugs}} orders have ended — the answer states it without one.',
+                    interpolation: { escapeValue: false },
                   },
                 )}
               </p>
@@ -915,7 +924,9 @@ const AiResponsePanel: React.FC<AiResponsePanelProps> = ({
               // Keyed on the value, never the group: a reference-group record may carry none, and
               // the module's own finding does not.
               const source = typeof ref.source === 'string' && ref.source.trim() ? ref.source.trim() : null;
-              const sourceTitle = source ? t('referenceSourceHover', 'Source: {{source}}', { source }) : undefined;
+              const sourceTitle = source
+                ? t('referenceSourceHover', 'Source: {{source}}', { source, interpolation: { escapeValue: false } })
+                : undefined;
               const link = url ? (
                 <a
                   className={styles.referenceTag}
@@ -947,7 +958,7 @@ const AiResponsePanel: React.FC<AiResponsePanelProps> = ({
                       className={styles.orderStopDateTag}
                       title={`${t('orderStopDateTitle', 'The date this prescription stopped being in force — not the record’s own date shown beside it.')} ${utcDayTitle}`}
                     >
-                      {t('orderStopDate', 'Stopped {{stopDate}}', { stopDate })}
+                      {t('orderStopDate', 'Stopped {{stopDate}}', { stopDate, interpolation: { escapeValue: false } })}
                     </span>
                   )}
                   {/* withheldInteractions is not drawn: the partners a drug-reference record leaves out
@@ -974,6 +985,7 @@ const AiResponsePanel: React.FC<AiResponsePanelProps> = ({
                     >
                       {t('sourceOfFindings', 'source of {{citations}}', {
                         citations: sourceOf.map((index) => `[${index}]`).join(', '),
+                        interpolation: { escapeValue: false },
                       })}
                     </span>
                   )}
