@@ -437,7 +437,11 @@ function renderAnswerWithCitations(answer: string, ctx: CitationContext): React.
 
 /** Whether a chip is drawn apart from the findings about the drug asked about — the box's split. */
 function isApartFromTheDrugAsked(warning: AiSafetyWarning): boolean {
-  return warning.aboutAnotherOfHerMedications === true || warning.aboutADrugOtherThanTheOneProposed === true;
+  return (
+    warning.aboutAnotherOfHerMedications === true ||
+    warning.aboutADrugOtherThanTheOneProposed === true ||
+    warning.crossReactivityBesideHerStatedConflicts === true
+  );
 }
 
 /**
@@ -611,8 +615,10 @@ const AiResponsePanel: React.FC<AiResponsePanelProps> = ({
   // (backend aboutAnotherOfHerMedications), or about any drug other than the one the question
   // proposes (backend aboutADrugOtherThanTheOneProposed), is drawn apart from those, behind a line
   // of its own: still in the box and one click away, but it neither keeps the box open nor sits
-  // among the findings about that drug. Only `true` moves a chip; `false` is no claim it is about
-  // the drug in question.
+  // among the findings about that drug. So is a possible cross-reactivity beside an answer the
+  // module followed with her direct conflicts (backend crossReactivityBesideHerStatedConflicts, ADR
+  // Decision 210), under a line saying what it is. Only `true` moves a chip; `false` is no claim it
+  // is about the drug in question.
   // A question asking whether she has ever taken a drug (backend asksWhetherSheHasTakenADrug,
   // ADR Decision 156) draws every chip apart: they are about that drug's place in her chart, not
   // a reading of the question.
@@ -630,6 +636,11 @@ const AiResponsePanel: React.FC<AiResponsePanelProps> = ({
   // prescriptions.
   const otherWarningsAreHerMedications = otherWarnings.every(
     (warning) => warning.aboutAnotherOfHerMedications === true,
+  );
+  // And it says they are possible cross-reactivities only where every chip behind it is one: the
+  // answer names those drugs, so "another of her medications" would be false of them.
+  const otherWarningsAreCrossReactivities = otherWarnings.every(
+    (warning) => warning.crossReactivityBesideHerStatedConflicts === true,
   );
   const safetyBoxCollapsible = mainWarnings.length > 0 && mainWarnings.every((warning) => compactWarnings.has(warning));
   const [safetyBoxOpen, setSafetyBoxOpen] = useState(false);
@@ -1028,10 +1039,15 @@ const AiResponsePanel: React.FC<AiResponsePanelProps> = ({
                         count: otherWarnings.length,
                         defaultValue_other: '{{count}} findings about other medications this patient takes',
                       })
-                    : t('notAboutTheDrugAsked', '{{count}} finding not about the drug asked about', {
-                        count: otherWarnings.length,
-                        defaultValue_other: '{{count}} findings not about the drug asked about',
-                      })}{' '}
+                    : otherWarningsAreCrossReactivities
+                      ? t('crossReactivityFindings', '{{count}} possible cross-reactivity finding', {
+                          count: otherWarnings.length,
+                          defaultValue_other: '{{count}} possible cross-reactivity findings',
+                        })
+                      : t('notAboutTheDrugAsked', '{{count}} finding not about the drug asked about', {
+                          count: otherWarnings.length,
+                          defaultValue_other: '{{count}} findings not about the drug asked about',
+                        })}{' '}
                 <button
                   type="button"
                   className={styles.detailsToggle}
