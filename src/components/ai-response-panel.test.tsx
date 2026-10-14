@@ -7,6 +7,7 @@ import { SESSION_EXPIRED_ERROR_CODE, type AiReference, type AiSafetyWarning } fr
 import { ASPIRIN_CHIP_THE_ANSWER_CITES } from '../__fixtures__/aspirin-response';
 import { SCREEN_WITH_ATTACHED_ALLERGY_RECORDS } from '../__fixtures__/attached-records-response';
 import { IBUPROFEN_BESIDE_HER_OWN_ALLERGIES } from '../__fixtures__/other-medication-response';
+import { SAME_CLASS_BESIDE_HER_STATED_CONFLICTS } from '../__fixtures__/cross-reactivity-beside-stated-conflicts-response';
 import { LIDOCAINE_QUESTION_ABOUT_HER_OWN_ORDER } from '../__fixtures__/own-medication-question-response';
 import { RIFAMPICIN_ANSWER_CLAIMING_AN_ENDED_ORDER } from '../__fixtures__/ended-order-claim-response';
 import { ASPIRIN_ANSWER_DROPPING_THE_SIGNIFICANCE_CAVEAT } from '../__fixtures__/significance-qualifier-response';
@@ -1688,6 +1689,73 @@ describe('AiResponsePanel chips about her other medications', () => {
     expect(safetySection().className).not.toContain('safetyWarningsSectionNeutral');
     expect(screen.getByText(LINE)).toBeInTheDocument();
     expect(screen.queryByText(LIDOCAINE)).not.toBeInTheDocument();
+  });
+});
+
+/**
+ * Possible cross-reactivity findings beside an answer the module followed with the orders her
+ * records directly conflict with (backend ADR Decision 210): the live same-class answer, after
+ * which the module named her dexamethasone and hydrocortisone orders, and beside which eight
+ * class-level findings about her corticosteroids were raised. They kept the box open, red, under an
+ * answer that already states the conflicts — noise, as the owner ruled.
+ */
+describe('AiResponsePanel cross-reactivity findings beside the stated conflicts', () => {
+  const PREDNISONE =
+    /^Prednisone: Prednisone is in the same ATC class \(H02AB\) as the patient's allergy to Dexamethasone/;
+  const LINE = /^8 possible cross-reactivity findings/;
+
+  function renderSameClass(overrides: Record<string, unknown> = {}) {
+    const response = { ...SAME_CLASS_BESIDE_HER_STATED_CONFLICTS, ...overrides };
+    return render(
+      <AiResponsePanel
+        {...(response as object)}
+        answer={response.answer as string}
+        references={response.references as unknown as AiReference[]}
+        safetyWarnings={response.safetyWarnings as AiSafetyWarning[]}
+        questionId={response.questionId as string}
+        error={null}
+        isLoading={false}
+        patientUuid={patientUuid}
+      />,
+    );
+  }
+
+  const safetySection = () =>
+    screen.getByText((_content, element) =>
+      Boolean(element?.className?.includes?.('safetyWarningsSection') && element?.tagName === 'DIV'),
+    );
+
+  it('keeps them behind a line of their own, closed, in a neutral box', () => {
+    renderSameClass();
+    expect(screen.getByText(LINE)).toBeInTheDocument();
+    expect(screen.queryByText(PREDNISONE)).not.toBeInTheDocument();
+    expect(safetySection().className).toContain('safetyWarningsSectionNeutral');
+  });
+
+  it('opens them in full on a click', () => {
+    renderSameClass();
+    fireEvent.click(screen.getByRole('button', { name: 'Show details' }));
+    expect(screen.getByText(PREDNISONE)).toBeInTheDocument();
+  });
+
+  it('never calls them findings about her other medications, since the answer names those drugs', () => {
+    renderSameClass();
+    expect(screen.queryByText(/about other medications this patient takes/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/about another of this patient’s medications/)).not.toBeInTheDocument();
+  });
+
+  it('draws them in full in an open box where the key is false, absent, or not the boolean true', () => {
+    for (const value of [false, undefined, 'true']) {
+      const safetyWarnings = SAME_CLASS_BESIDE_HER_STATED_CONFLICTS.safetyWarnings.map((warning) => ({
+        ...warning,
+        crossReactivityBesideHerStatedConflicts: value,
+      }));
+      const { unmount } = renderSameClass({ safetyWarnings });
+      expect(screen.getByText(PREDNISONE)).toBeInTheDocument();
+      expect(screen.queryByText(LINE)).not.toBeInTheDocument();
+      expect(safetySection().className).not.toContain('safetyWarningsSectionNeutral');
+      unmount();
+    }
   });
 });
 

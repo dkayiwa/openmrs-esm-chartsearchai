@@ -189,6 +189,16 @@ export interface AiSafetyWarning {
    */
   aboutADrugOtherThanTheOneProposed?: boolean;
   /**
+   * Whether this chip is a possible cross-reactivity — an allergy recorded to another drug of its
+   * class — beside an answer the module followed with the orders her records directly conflict
+   * with (backend ADR Decision 210). The answer names the drug, so this is NOT
+   * {@link aboutAnotherOfHerMedications}, which would call it another of her medications. Only
+   * `true` is rendered, as a chip drawn apart from the findings about the drugs in question under a
+   * line saying it is a possible cross-reactivity. A backend that predates the key sends nothing,
+   * which reads the same as `false`.
+   */
+  crossReactivityBesideHerStatedConflicts?: boolean;
+  /**
    * The record number this chip's own finding has in the prompt — the `index` of the
    * `safety_finding` reference an answer's marker cites — or `null` where no single record is it
    * (backend ADR Decision 138). The join from a chip to its citation where several findings share

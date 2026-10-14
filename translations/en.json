@@ -13,6 +13,8 @@
   "cancel": "Cancel",
   "close": "Close",
   "copy": "Copy",
+  "crossReactivityFindings_one": "{{count}} possible cross-reactivity finding",
+  "crossReactivityFindings_other": "{{count}} possible cross-reactivity findings",
   "drugClassNoteCitation": "A note about a drug class the question named — not this patient’s record.",
   "drugClassNoteLabel": "Drug class note",
   "drugReferenceCitation": "Clinical reference data — not this patient’s record.",
