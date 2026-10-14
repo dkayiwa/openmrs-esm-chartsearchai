@@ -852,6 +852,17 @@ describe('AiResponsePanel reference citation metadata', () => {
       Boolean(element?.className?.includes?.('referenceItem') && element.textContent?.startsWith(`[${index}] `)),
     );
 
+  it('prints a slash in the dataset name on hover as the backend sends it', () => {
+    const references = ENDED_ORDER_DRUG_PROPOSED.references.map((ref) =>
+      ref.index === 10 ? { ...ref, source: 'DDInter 2.0 / curated' } : ref,
+    );
+    renderLiveResponse({ ...ENDED_ORDER_DRUG_PROPOSED, references });
+    expect(within(referenceItem(10)).getByText('[10] Drug reference')).toHaveAttribute(
+      'title',
+      'Source: DDInter 2.0 / curated',
+    );
+  });
+
   it('names the dataset a drug-reference citation came from on hover, and draws no subset count', () => {
     // The captured response: [10] is Rifampicin's DDInter entry, 648 of whose interaction partners
     // the record does not show, [11] the module's own finding, computed rather than quoted, and [5]
@@ -1751,6 +1762,20 @@ describe('AiResponsePanel already-prescribed mark', () => {
     ]);
     expect(screen.getByText('Already prescribed: Advil 400mg, Nurofen 200mg')).toBeInTheDocument();
   });
+
+  it('prints a slash or an ampersand in her order name as her chart spells it', () => {
+    // Sarah Taylor's order was drawn "Already prescribed: Solu-Medrol 125mg&#x2F;5ml": i18next
+    // escaped the name for HTML, and React printed the entity.
+    const [contraindication, ...rest] = response.safetyWarnings;
+    renderLidocaine([
+      {
+        ...contraindication,
+        currentMedicationOrders: [{ orderDisplay: 'Solu-Medrol 125mg/5ml & Co', orderUuid: 'uuid-solu-medrol' }],
+      },
+      ...rest,
+    ]);
+    expect(screen.getByText('Already prescribed: Solu-Medrol 125mg/5ml & Co')).toBeInTheDocument();
+  });
 });
 
 /**
@@ -1791,6 +1816,13 @@ describe('AiResponsePanel an ended order no record states', () => {
         (_content, element) =>
           Boolean(element?.className?.includes?.('answerSection')) && Boolean(element?.textContent?.includes(LINE)),
       ),
+    ).toBeInTheDocument();
+  });
+
+  it('prints a slash in a drug name as the answer names it', () => {
+    renderRifampicin({ unsupportedEndedOrderClaims: ['Lopinavir / ritonavir'] });
+    expect(
+      screen.getByText('No record says the Lopinavir / ritonavir order has ended — the answer states it without one.'),
     ).toBeInTheDocument();
   });
 
