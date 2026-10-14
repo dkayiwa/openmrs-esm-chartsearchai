@@ -645,6 +645,9 @@ const AiResponsePanel: React.FC<AiResponsePanelProps> = ({
   const safetyBoxCollapsible = mainWarnings.length > 0 && mainWarnings.every((warning) => compactWarnings.has(warning));
   const [safetyBoxOpen, setSafetyBoxOpen] = useState(false);
   const [otherMedicationsOpen, setOtherMedicationsOpen] = useState(false);
+  // The reference-group citation whose text is open below the list, one at a time, keyed on its
+  // index AND uuid so a later answer reusing the index does not open a different record.
+  const [openReferenceText, setOpenReferenceText] = useState<string | null>(null);
   const toggleWarning = useCallback((warning: AiSafetyWarning) => {
     setExpandedWarnings((previous) => {
       const next = new Set(previous);
@@ -927,6 +930,15 @@ const AiResponsePanel: React.FC<AiResponsePanelProps> = ({
               const sourceTitle = source
                 ? t('referenceSourceHover', 'Source: {{source}}', { source, interpolation: { escapeValue: false } })
                 : undefined;
+              // What a reference-group citation was checked against, read where a chart citation
+              // would be opened: such a record lives nowhere a link could go. Gated on reference data,
+              // so a chart record's text is never drawn even should one arrive.
+              const referenceText =
+                referenceData && !url && typeof ref.referenceText === 'string' && ref.referenceText.trim()
+                  ? ref.referenceText.trim()
+                  : null;
+              const textKey = `${ref.index}:${ref.resourceUuid}`;
+              const textOpen = referenceText !== null && openReferenceText === textKey;
               const link = url ? (
                 <a
                   className={styles.referenceTag}
@@ -936,6 +948,17 @@ const AiResponsePanel: React.FC<AiResponsePanelProps> = ({
                 >
                   {label}
                 </a>
+              ) : referenceText ? (
+                <button
+                  type="button"
+                  className={styles.referenceTagExpandable}
+                  title={sourceTitle}
+                  aria-expanded={textOpen}
+                  aria-controls={`reference-text-${ref.index}`}
+                  onClick={() => setOpenReferenceText(textOpen ? null : textKey)}
+                >
+                  {label}
+                </button>
               ) : (
                 <span
                   className={isMisattributed ? styles.referenceTagMisattributed : styles.referenceTagInert}
@@ -994,6 +1017,31 @@ const AiResponsePanel: React.FC<AiResponsePanelProps> = ({
               );
             })}
           </div>
+          {(() => {
+            const open = references.find((ref) => `${ref.index}:${ref.resourceUuid}` === openReferenceText);
+            const text =
+              open && isReferenceData(open) && typeof open.referenceText === 'string' ? open.referenceText.trim() : '';
+            if (!open || !text) {
+              return null;
+            }
+            const heading = `[${open.index}] ${referenceLabel(open, t)}`;
+            const source = typeof open.source === 'string' && open.source.trim() ? open.source.trim() : null;
+            return (
+              <section id={`reference-text-${open.index}`} className={styles.referenceTextPanel} aria-label={heading}>
+                <p className={styles.referenceTextHeading}>{heading}</p>
+                <p className={styles.referenceTextNote}>{referenceTitle(open, t)}</p>
+                <p className={styles.referenceTextBody}>{text}</p>
+                {source && (
+                  <p className={styles.referenceTextNote}>
+                    {t('referenceSourceHover', 'Source: {{source}}', {
+                      source,
+                      interpolation: { escapeValue: false },
+                    })}
+                  </p>
+                )}
+              </section>
+            );
+          })()}
         </div>
       )}
 
